@@ -140,12 +140,19 @@
 
   /* ── PERSON CARDS ── */
   .summary-grid {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, 148px);
     justify-content: center;
     gap: 12px;
     margin-bottom: 20px;
   }
+
+  /* Row 1: Maggie, Amal, Rachel — Row 2: Monica, Inee centered */
+  .summary-grid .person-card:nth-child(1) { grid-column: 1; grid-row: 1; } /* Maggie */
+  .summary-grid .person-card:nth-child(2) { grid-column: 1; grid-row: 2; justify-self: end; } /* Monica */
+  .summary-grid .person-card:nth-child(3) { grid-column: 2; grid-row: 1; } /* Amal */
+  .summary-grid .person-card:nth-child(4) { grid-column: 3; grid-row: 1; } /* Rachel */
+  .summary-grid .person-card:nth-child(5) { grid-column: 3; grid-row: 2; justify-self: start; } /* Inee */
 
   .person-card {
     width: 148px;
