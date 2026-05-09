@@ -141,22 +141,21 @@
   /* ── PERSON CARDS ── */
   .summary-grid {
     display: grid;
-    grid-template-columns: repeat(3, 148px);
+    grid-template-columns: repeat(3, 1fr);
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
     margin-bottom: 20px;
   }
 
   /* Row 1: Maggie, Amal, Rachel — Row 2: Monica, Inee centered */
   .summary-grid .person-card:nth-child(1) { grid-column: 1; grid-row: 1; } /* Maggie */
-  .summary-grid .person-card:nth-child(2) { grid-column: 1; grid-row: 2; justify-self: end; } /* Monica */
+  .summary-grid .person-card:nth-child(2) { grid-column: 1; grid-row: 2; } /* Monica */
   .summary-grid .person-card:nth-child(3) { grid-column: 2; grid-row: 1; } /* Amal */
   .summary-grid .person-card:nth-child(4) { grid-column: 3; grid-row: 1; } /* Rachel */
-  .summary-grid .person-card:nth-child(5) { grid-column: 3; grid-row: 2; justify-self: start; } /* Inee */
+  .summary-grid .person-card:nth-child(5) { grid-column: 3; grid-row: 2; } /* Inee */
 
   .person-card {
-    width: 148px;
-    flex-shrink: 0;
+    width: 100%;
     background: var(--white);
     border: 1.5px solid var(--border);
     border-radius: 20px;
@@ -536,17 +535,27 @@
 </div>
 
 <script type="module">
-  // ── Firebase (placeholder — swap in real config) ──────────────────────────
-  // When you have your Firebase config, replace the block below
-  const FIREBASE_ENABLED = false; // set to true after adding config
-  let fbPush, fbRemove, fbUpdate, expensesRef;
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getDatabase, ref, push, remove, update, onValue } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
-  // ── State ─────────────────────────────────────────────────────────────────
+  const firebaseConfig = {
+    apiKey: "AIzaSyB48HhJDtSnAK1n6YFFcMMcRVf30lEjZzI",
+    authDomain: "girls-gone-mild.firebaseapp.com",
+    databaseURL: "https://girls-gone-mild-default-rtdb.firebaseio.com",
+    projectId: "girls-gone-mild",
+    storageBucket: "girls-gone-mild.firebasestorage.app",
+    messagingSenderId: "1038826128887",
+    appId: "1:1038826128887:web:9aa63a28be348792545af2"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const expensesRef = ref(db, 'expenses');
+
   const PEOPLE = ['Maggie', 'Monica', 'Amal', 'Rachel', 'Inee'];
-  let expenses = JSON.parse(localStorage.getItem('jenny-bach') || '{}');
+  let expenses = {};
   let editingKey = null;
 
-  // ── Sync status ───────────────────────────────────────────────────────────
   function setStatus(state) {
     const dot = document.getElementById('syncDot');
     const lbl = document.getElementById('syncLabel');
@@ -554,21 +563,20 @@
     if (state === 'connected') lbl.textContent = 'Live — synced';
     else if (state === 'syncing') lbl.textContent = 'Saving…';
     else if (state === 'error') lbl.textContent = 'Connection error';
-    else lbl.textContent = FIREBASE_ENABLED ? 'Connecting…' : 'Local mode';
+    else lbl.textContent = 'Connecting…';
   }
 
-  if (!FIREBASE_ENABLED) setStatus('');
+  // Listen for real-time changes
+  onValue(expensesRef, (snapshot) => {
+    expenses = snapshot.val() || {};
+    setStatus('connected');
+    render();
+  }, () => setStatus('error'));
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
   const fmt = n => '$' + Math.abs(n).toFixed(2);
   const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const getChecked = prefix => PEOPLE.filter(p => document.getElementById(prefix + p)?.checked);
 
-  function saveLocal() { localStorage.setItem('jenny-bach', JSON.stringify(expenses)); }
-
-  function genKey() { return 'e_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
-
-  // ── Split preview ─────────────────────────────────────────────────────────
   function updatePreview() {
     const amount = parseFloat(document.getElementById('expAmount').value) || 0;
     const checked = getChecked('chk-');
@@ -583,7 +591,6 @@
     if (el) { el.addEventListener('change', updatePreview); el.addEventListener('input', updatePreview); }
   });
 
-  // ── Add expense ───────────────────────────────────────────────────────────
   window.addExpense = async function() {
     const name = document.getElementById('expName').value.trim();
     const amount = parseFloat(document.getElementById('expAmount').value);
@@ -597,45 +604,30 @@
     if (!people.length) { errEl.textContent = 'Select at least one person.'; return; }
 
     document.getElementById('addBtn').disabled = true;
-    const entry = { name, amount, paidBy, people, timestamp: Date.now() };
-
-    if (FIREBASE_ENABLED) {
-      setStatus('syncing');
-      try { await fbPush(expensesRef, entry); }
-      catch(e) { document.getElementById('errorMsg').textContent = 'Failed to save.'; setStatus('error'); }
-    } else {
-      const key = genKey();
-      expenses[key] = entry;
-      saveLocal();
-      render();
+    setStatus('syncing');
+    try {
+      await push(expensesRef, { name, amount, paidBy, people, timestamp: Date.now() });
+      document.getElementById('expName').value = '';
+      document.getElementById('expAmount').value = '';
+      PEOPLE.forEach(p => document.getElementById('chk-' + p).checked = true);
+      updatePreview();
+    } catch(e) {
+      errEl.textContent = 'Failed to save. Check your connection.';
+      setStatus('error');
     }
-
-    document.getElementById('expName').value = '';
-    document.getElementById('expAmount').value = '';
-    PEOPLE.forEach(p => document.getElementById('chk-' + p).checked = true);
-    updatePreview();
     document.getElementById('addBtn').disabled = false;
   }
 
-  // ── Delete expense ────────────────────────────────────────────────────────
   window.deleteExpense = async function(key) {
     if (!confirm('Remove this expense?')) return;
-    if (FIREBASE_ENABLED) {
-      setStatus('syncing');
-      try { await fbRemove(expensesRef + '/' + key); }
-      catch(e) { setStatus('error'); }
-    } else {
-      delete expenses[key];
-      saveLocal();
-      render();
-    }
+    setStatus('syncing');
+    try { await remove(ref(db, 'expenses/' + key)); }
+    catch(e) { setStatus('error'); }
   }
 
-  // ── Edit expense ──────────────────────────────────────────────────────────
   window.startEdit = function(key) {
     editingKey = key;
     render();
-    // Scroll to the editing item
     setTimeout(() => {
       const el = document.querySelector('.expense-item.editing');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -658,22 +650,15 @@
       return;
     }
 
-    const updated = { ...expenses[key], name, amount, paidBy, people };
-
-    if (FIREBASE_ENABLED) {
-      setStatus('syncing');
-      try { await fbUpdate(expensesRef + '/' + key, updated); }
-      catch(e) { setStatus('error'); return; }
-    } else {
-      expenses[key] = updated;
-      saveLocal();
-    }
+    setStatus('syncing');
+    try {
+      await update(ref(db, 'expenses/' + key), { name, amount, paidBy, people });
+    } catch(e) { setStatus('error'); return; }
 
     editingKey = null;
     render();
   }
 
-  // ── Settlement algorithm ──────────────────────────────────────────────────
   function calcSettlements() {
     const net = {};
     PEOPLE.forEach(p => net[p] = 0);
@@ -682,7 +667,6 @@
       if (e.paidBy) net[e.paidBy] += e.amount;
       e.people.forEach(p => net[p] -= share);
     });
-
     const bal = PEOPLE.map(p => ({ person: p, bal: net[p] }));
     const settlements = [];
     for (let i = 0; i < 20; i++) {
@@ -697,7 +681,6 @@
     return settlements;
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
   function render() {
     const expList = Object.entries(expenses);
     const grandTotal = expList.reduce((s, [, e]) => s + e.amount, 0);
@@ -707,7 +690,6 @@
     document.getElementById('expCount').textContent = n + ' expense' + (n !== 1 ? 's' : '');
     document.getElementById('countBadge').textContent = n + ' item' + (n !== 1 ? 's' : '');
 
-    // Per-person
     const owes = {}, paid = {};
     PEOPLE.forEach(p => { owes[p] = 0; paid[p] = 0; });
     expList.forEach(([, e]) => {
@@ -725,7 +707,6 @@
       </div>
     `).join('');
 
-    // Settle up
     const settlements = calcSettlements();
     const settleEl = document.getElementById('settleList');
     if (!expList.length) {
@@ -745,7 +726,6 @@
       `).join('');
     }
 
-    // Expense list
     const listEl = document.getElementById('expenseList');
     if (!expList.length) {
       listEl.innerHTML = `
@@ -765,7 +745,6 @@
       const isEditing = editingKey === key;
 
       if (isEditing) {
-        // Edit form inline
         const editPeople = PEOPLE.map(p => `
           <div class="person-check check-${p}" style="position:relative;">
             <input type="checkbox" id="edit-chk-${key}-${p}" ${e.people.includes(p) ? 'checked' : ''}>
@@ -773,33 +752,18 @@
               <span class="dot dot-${p}"></span>${p}
             </label>
           </div>`).join('');
-
         const paidOpts = PEOPLE.map(p => `<option value="${p}" ${e.paidBy === p ? 'selected' : ''}>${p}</option>`).join('');
-
         return `
           <div class="expense-item editing">
-            <div>
-              <div class="expense-name">${esc(e.name)}</div>
-            </div>
-            <div class="expense-right">
-              <div style="font-size:11px;color:var(--text-muted);">editing</div>
-            </div>
+            <div><div class="expense-name">${esc(e.name)}</div></div>
+            <div class="expense-right"><div style="font-size:11px;color:var(--text-soft);">editing</div></div>
             <div class="edit-form">
               <div class="edit-grid">
-                <div>
-                  <label>Expense Name</label>
-                  <input type="text" id="edit-name-${key}" value="${esc(e.name)}">
-                </div>
-                <div>
-                  <label>Total ($)</label>
-                  <input type="number" id="edit-amount-${key}" value="${e.amount}" min="0" step="0.01">
-                </div>
-                <div>
-                  <label>Paid By</label>
-                  <select id="edit-paid-${key}">${paidOpts}</select>
-                </div>
+                <div><label>Expense Name</label><input type="text" id="edit-name-${key}" value="${esc(e.name)}"></div>
+                <div><label>Total ($)</label><input type="number" id="edit-amount-${key}" value="${e.amount}" min="0" step="0.01"></div>
+                <div><label>Paid By</label><select id="edit-paid-${key}">${paidOpts}</select></div>
               </div>
-              <div style="font-size:10px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Split Between</div>
+              <div style="font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-soft);margin-bottom:8px;">Split Between</div>
               <div class="edit-people">${editPeople}</div>
               <div class="btn-row">
                 <button class="add-btn" onclick="saveEdit('${key}')">Save Changes</button>
@@ -831,7 +795,6 @@
   document.getElementById('expName').addEventListener('keydown', e => { if (e.key === 'Enter') window.addExpense(); });
   document.getElementById('expAmount').addEventListener('keydown', e => { if (e.key === 'Enter') window.addExpense(); });
 
-  render();
   updatePreview();
 </script>
 </body>
