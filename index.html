@@ -307,7 +307,12 @@
   /* ── CHECKBOXES ── */
   .split-label { font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-soft); margin-bottom: 10px; display: block; }
 
-  .people-select { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .people-select {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 18px;
+  }
   .person-check { position: relative; }
   .person-check input[type="checkbox"] { position: absolute; opacity: 0; width: 0; height: 0; }
 
