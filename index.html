@@ -147,12 +147,13 @@
     margin-bottom: 20px;
   }
 
-  /* Row 1: Maggie, Amal, Rachel — Row 2: Monica, Inee centered */
-  .summary-grid .person-card:nth-child(1) { grid-column: 1; grid-row: 1; } /* Maggie */
-  .summary-grid .person-card:nth-child(2) { grid-column: 1; grid-row: 2; } /* Monica */
-  .summary-grid .person-card:nth-child(3) { grid-column: 2; grid-row: 1; } /* Amal */
-  .summary-grid .person-card:nth-child(4) { grid-column: 3; grid-row: 1; } /* Rachel */
-  .summary-grid .person-card:nth-child(5) { grid-column: 3; grid-row: 2; } /* Inee */
+  /* Row 1: Jenny, Maggie, Amal — Row 2: Monica, Rachel, Inee */
+  .summary-grid .person-card:nth-child(1) { grid-column: 1; grid-row: 1; } /* Jenny */
+  .summary-grid .person-card:nth-child(2) { grid-column: 2; grid-row: 1; } /* Maggie */
+  .summary-grid .person-card:nth-child(3) { grid-column: 1; grid-row: 2; } /* Monica */
+  .summary-grid .person-card:nth-child(4) { grid-column: 3; grid-row: 1; } /* Amal */
+  .summary-grid .person-card:nth-child(5) { grid-column: 2; grid-row: 2; } /* Rachel */
+  .summary-grid .person-card:nth-child(6) { grid-column: 3; grid-row: 2; } /* Inee */
 
   .person-card {
     width: 100%;
@@ -180,6 +181,7 @@
   .av-Amal   { background: linear-gradient(135deg, #A8CCAF, #3A7A4A); color: white; }
   .av-Rachel { background: linear-gradient(135deg, #D4B896, #8A6030); color: white; }
   .av-Inee   { background: linear-gradient(135deg, #E0C8E8, #9B72A8); color: white; }
+  .av-Jenny  { background: linear-gradient(135deg, #F7C5D0, #D4607A); color: white; }
 
   .person-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
   .person-owes { font-size: 15px; font-weight: 600; color: var(--blue-deep); margin-bottom: 2px; font-family: 'Playfair Display', serif; }
@@ -238,13 +240,6 @@
   .settle-arrow { color: var(--blue-light); font-size: 18px; }
   .settle-amt { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--blue-deep); }
   .settled-msg { text-align: center; padding: 16px; color: var(--text-soft); font-size: 13px; font-style: italic; }
-
-  /* ── PERSON COLORS for settle text ── */
-  .c-Maggie { color: var(--blue-deep); }
-  .c-Monica { color: var(--lavender); }
-  .c-Amal   { color: var(--sage); }
-  .c-Rachel { color: var(--sand); }
-  .c-Inee   { color: #8A50A8; }
 
   /* ── FORM ── */
   .form-card {
@@ -339,6 +334,16 @@
   .dot-Amal   { background: var(--sage); }
   .dot-Rachel { background: var(--sand); }
   .dot-Inee   { background: #8A50A8; }
+  .dot-Jenny  { background: #D4607A; }
+
+  .c-Maggie { color: var(--blue-deep); }
+  .c-Monica { color: var(--lavender); }
+  .c-Amal   { color: var(--sage); }
+  .c-Rachel { color: var(--sand); }
+  .c-Inee   { color: #8A50A8; }
+  .c-Jenny  { color: #D4607A; }
+
+  .check-Jenny input:checked + label { background: #FDE8EC; border-color: #F7C5D0; color: #D4607A; font-weight: 600; }
 
   .split-preview { font-size: 12px; color: var(--text-soft); margin-top: 6px; min-height: 18px; font-style: italic; }
   .error-msg { color: #C03030; font-size: 12px; margin-top: 6px; min-height: 18px; font-weight: 500; }
@@ -413,6 +418,7 @@
   .pill-Amal   { background: var(--sage-pale); color: var(--sage); border: 1px solid var(--sage-light); }
   .pill-Rachel { background: var(--sand-pale); color: var(--sand); border: 1px solid var(--sand-light); }
   .pill-Inee   { background: var(--lavender-pale); color: #8A50A8; border: 1px solid var(--lavender-light); }
+  .pill-Jenny  { background: #FDE8EC; color: #D4607A; border: 1px solid #F7C5D0; }
 
   .expense-right { text-align: right; flex-shrink: 0; }
   .expense-total { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--blue-deep); margin-bottom: 2px; }
@@ -500,6 +506,7 @@
       <div>
         <label for="paidBy">Paid By</label>
         <select id="paidBy">
+          <option value="Jenny">Jenny</option>
           <option value="Maggie">Maggie</option>
           <option value="Monica">Monica</option>
           <option value="Amal">Amal</option>
@@ -511,6 +518,7 @@
 
     <span class="split-label">Split Between</span>
     <div class="people-select">
+      <div class="person-check check-Jenny"><input type="checkbox" id="chk-Jenny" checked><label for="chk-Jenny"><span class="dot dot-Jenny"></span>Jenny</label></div>
       <div class="person-check check-Maggie"><input type="checkbox" id="chk-Maggie" checked><label for="chk-Maggie"><span class="dot dot-Maggie"></span>Maggie</label></div>
       <div class="person-check check-Monica"><input type="checkbox" id="chk-Monica" checked><label for="chk-Monica"><span class="dot dot-Monica"></span>Monica</label></div>
       <div class="person-check check-Amal"><input type="checkbox" id="chk-Amal" checked><label for="chk-Amal"><span class="dot dot-Amal"></span>Amal</label></div>
@@ -552,7 +560,7 @@
   const db = getDatabase(app);
   const expensesRef = ref(db, 'expenses');
 
-  const PEOPLE = ['Maggie', 'Monica', 'Amal', 'Rachel', 'Inee'];
+  const PEOPLE = ['Jenny', 'Maggie', 'Monica', 'Amal', 'Rachel', 'Inee'];
   let expenses = {};
   let editingKey = null;
 
